@@ -1,8 +1,9 @@
 import json
+import logging
 import urllib.error
 import urllib.parse
 import urllib.request
-import logging
+
 
 def build_url(url, query_params):
     return f"{url}?{urllib.parse.urlencode(query_params)}"
@@ -25,5 +26,5 @@ if __name__ == "__main__":
     try:
         print(get_weather(url, query_params))
     except (urllib.error.URLError, json.JSONDecodeError) as e:
-        logging.error("Erreur réseau : %s", e)
+        logging.error("Network error: %s", e)
         raise
