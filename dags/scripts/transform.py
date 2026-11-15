@@ -22,6 +22,7 @@ def process_data(raw_data):
     wind = clean(hourly["wind_speed_10m"])
 
     return {
+        "location": "Dakar",
         "date": format_date(hourly["time"][0]),
         "avg_temperature": round(sum(temps) / len(temps), 1),
         "avg_humidity": round(sum(humidity) / len(humidity), 1),
