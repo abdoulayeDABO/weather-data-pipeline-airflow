@@ -3,6 +3,7 @@ from datetime import datetime
 from airflow.sdk import dag, task
 from scripts.extract import get_weather
 from scripts.transform import process_data
+from scripts.load import load_daily
 
 URL = "https://api.open-meteo.com/v1/forecast"
 QUERY_PARAMS = {
@@ -17,9 +18,9 @@ QUERY_PARAMS = {
 @dag(
     dag_id="weather_etl",
     description="Daily ETL pipeline for Dakar weather data (Open-Meteo API)",
-    start_date=datetime(2026, 11, 1),
+    start_date=datetime(2026, 11, 8),
     schedule="@daily", 
-    catchup=False, 
+    catchup=True, 
     default_args={"retries": 2},  
     tags=["weather", "etl"],
 )
@@ -43,9 +44,18 @@ def weather_etl():
         """
         return process_data(raw_data)
 
+    @task
+    def load(summary):
+        """
+        #### Load task
+        Insert the daily summary into the database (upsert on date).
+        """
+        load_daily(summary)
+
 
     raw_data = extract()
     transformed_data = transform(raw_data)
+    load(transformed_data)
 
 
 

@@ -10,11 +10,8 @@ x-airflow-common: &airflow-common
     AIRFLOW__API__SECRET_KEY: change-me-secret
     AIRFLOW__API_AUTH__JWT_SECRET: change-me-jwt-secret
     PYTHONPATH: /opt/airflow/scripts
-    WEATHER_DB_HOST: postgres
-    WEATHER_DB_PORT: "5432"
-    WEATHER_DB_NAME: weather
-    WEATHER_DB_USER: airflow
-    WEATHER_DB_PASSWORD: airflow
+  env_file:
+    - .env
   volumes:
     - ./dags:/opt/airflow/dags
     - ./scripts:/opt/airflow/scripts
