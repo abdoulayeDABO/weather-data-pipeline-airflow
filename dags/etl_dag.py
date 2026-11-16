@@ -1,17 +1,16 @@
 from datetime import datetime
 
-from airflow.sdk import dag, task
+from airflow.sdk import dag, task, get_current_context
 from scripts.extract import get_weather
 from scripts.transform import process_data
 from scripts.load import load_daily
 
 URL = "https://api.open-meteo.com/v1/forecast"
-QUERY_PARAMS = {
+BASE_PARAMS = {
     "latitude": 14.6937,
     "longitude": -17.4441,
     "hourly": "temperature_2m,relative_humidity_2m,precipitation,wind_speed_10m",
-    "timezone": "Africa/Dakar",
-    "forecast_days": 1, 
+    "timezone": "Africa/Dakar"
 }
 
 
@@ -32,7 +31,10 @@ def weather_etl():
         Call the Open-Meteo API and return the raw JSON response
         (24 hourly values per variable for the current day).
         """
-        return get_weather(URL, QUERY_PARAMS)
+        context = get_current_context()
+        day = context["logical_date"].strftime("%Y-%m-%d")
+        params = {**BASE_PARAMS, "start_date": day, "end_date": day}
+        return get_weather(URL, params)
 
     @task
     def transform(raw_data):
