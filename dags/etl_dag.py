@@ -10,17 +10,47 @@ BASE_PARAMS = {
     "latitude": 14.6937,
     "longitude": -17.4441,
     "hourly": "temperature_2m,relative_humidity_2m,precipitation,wind_speed_10m",
-    "timezone": "Africa/Dakar"
+    "timezone": "Africa/Dakar",
 }
+
+REQUIRED_FIELDS = ["avg_temperature", "avg_humidity", "total_precipitation", "max_wind_speed"]
+
+
+def check_quality(row: dict) -> None:
+    """Raise ValueError listing every problem found in the daily summary."""
+    errors = []
+
+    for field in REQUIRED_FIELDS:
+        if row.get(field) is None:
+            errors.append(f"{field} is missing")
+
+    temp = row.get("avg_temperature")
+    if temp is not None and not (-10 <= temp <= 55):
+        errors.append(f"avg_temperature out of range: {temp}")
+
+    hum = row.get("avg_humidity")
+    if hum is not None and not (0 <= hum <= 100):
+        errors.append(f"avg_humidity out of range: {hum}")
+
+    rain = row.get("total_precipitation")
+    if rain is not None and rain < 0:
+        errors.append(f"total_precipitation is negative: {rain}")
+
+    wind = row.get("max_wind_speed")
+    if wind is not None and not (0 <= wind <= 200):
+        errors.append(f"max_wind_speed out of range: {wind}")
+
+    if errors:
+        raise ValueError("Data quality check failed: " + "; ".join(errors))
 
 
 @dag(
     dag_id="weather_etl",
     description="Daily ETL pipeline for Dakar weather data (Open-Meteo API)",
     start_date=datetime(2026, 11, 8),
-    schedule="@daily", 
-    catchup=True, 
-    default_args={"retries": 2},  
+    schedule="@daily",
+    catchup=True,
+    default_args={"retries": 2},
     tags=["weather", "etl"],
 )
 def weather_etl():
@@ -47,6 +77,16 @@ def weather_etl():
         return process_data(raw_data)
 
     @task
+    def check(summary):
+        """
+        #### Data quality check task
+        Validate the daily summary (no missing values, values in a
+        plausible range). Fails the run before anything is loaded.
+        """
+        check_quality(summary)
+        return summary
+
+    @task
     def load(summary):
         """
         #### Load task
@@ -54,11 +94,10 @@ def weather_etl():
         """
         load_daily(summary)
 
-
     raw_data = extract()
     transformed_data = transform(raw_data)
-    load(transformed_data)
-
+    checked_data = check(transformed_data)
+    load(checked_data)
 
 
 weather_etl()

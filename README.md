@@ -139,5 +139,4 @@ Open the Streamlit dashboard at [http://localhost:8501](http://localhost:8501).
 ## Possible improvements
 
 - Store hourly data in a separate table
-- Add data quality checks and alerts
 - Add unit tests for `transform`
